@@ -1,5 +1,5 @@
 /*
-  thd7gps - a small ...
+  thd7gps - a small Arduino circuit to modify NMEA 183.3 to NMEA 183.2 sentencies
   Copyright (C) 2017 Paolo Mattiolo IN3AQK
   All rights reserved.
 
@@ -25,9 +25,13 @@
 
 
 char inByte;
-SoftwareSerial Radio(RX, TX); // RX, TX
-String nmeaLine = "";
+SoftwareSerial Radio(RADIORX, RADIOTX); // RX, TX
+SoftwareSerial Gps(GPSRX, GPSTX); // RX, TX
+char nmeaLine [85]; //max 82 for nmea standar
+char cleanedNemeaLine [85];
+int charIndex = 0;
 
+bool receiving = true;
 void setup() {
 
   Serial.begin(SERIAL_SPEED);
@@ -35,78 +39,93 @@ void setup() {
     ; // wait for serial port to connect. Needed for native USB port only
   }
   Radio.begin(RADIO_SPEED);
+  Gps.begin(GPS_SPEED);
 
 }
 
 void loop() {
-  if (Radio.available()) {
-    inByte = Radio.read();
+  Gps.listen();
 
-    if (inByte == '\n') {
-      String x = convertNmea(nmeaLine);
-      Serial.println(x);
-      nmeaLine = "";
+  if (Gps.available() > 0) {
+
+    inByte = Gps.read();
+
+    if ( inByte != '\n') {
+      nmeaLine[charIndex] = inByte;
+      charIndex++;
     }
-    else
-    {
-      nmeaLine += inByte;
+    else {
+      charIndex = 0;
+      receiving = false;
     }
+  }
+  if (!receiving) {
+    if (convertNmea()) {
+      Radio.println(cleanedNemeaLine);
+      //Serial.println(cleanedNemeaLine);
+    }
+    memset(nmeaLine, 0, sizeof(nmeaLine)); // clean string
+    receiving = true;
   }
 }
 
-String convertNmea (String inNmea183) {
 
-  String outNmea182 = "";
+bool convertNmea () {
+
+  memset(cleanedNemeaLine, 0, sizeof(cleanedNemeaLine));
   int gprmcLatIndex = 4;
   int gprmcLonIndex = 6;
   int gpggaLatIndex = 2;
   int gpggaLonIndex = 4;
 
-  if (inNmea183.startsWith("$GPRMC") || inNmea183.startsWith("$GPGGA")  ) {
-    int index = 0;
+  if (strncmp(nmeaLine, "$GPRMC", 5) == 0 || strncmp(nmeaLine, "$GPGGA", 5) == 0 ) {
+
     int countComma = 0;
     int positionInit = 0;
 
-    while (true) {
+    for (int index = 0;  index < 255; index++) {
 
-      outNmea182 += inNmea183[index];
 
-      if (inNmea183.startsWith("$GPRMC") && inNmea183[index] == ',') {
+      if (strncmp(nmeaLine, "$GPRMC", 5) == 0 && nmeaLine[index] == ',') {
         countComma += 1;
         if (countComma == gprmcLatIndex || countComma == gprmcLonIndex) {
-          outNmea182[index - 1] = '@';
+          nmeaLine[index - 1] = '@';
         }
 
       }
-      if (inNmea183.startsWith("$GPGGA") && inNmea183[index] == ',') {
+      if (strncmp(nmeaLine, "$GPGGA", 5) == 0 && nmeaLine[index] == ',') {
         if (countComma == gpggaLatIndex || countComma == gpggaLonIndex) {
-          outNmea182[index - 1] = '@';
+          nmeaLine[index - 1] = '@';
         }
         countComma += 1;
       }
-      if (inNmea183[index] == '*') {
-        break;
-      }
-      index++;
     }
 
-    String cleanNemea = "";
+
     int chk;
     // Remove the @ marker
-    for (int index = 0;  index < outNmea182.length(); index++) {
-      if (outNmea182[index] != '@') {
-        cleanNemea += outNmea182[index];
-        if (outNmea182[index] != '@'  && outNmea182[index] != '$' && outNmea182[index] != '*') {
-          chk ^= outNmea182[index];
+    int cleanedNmeaIndex = 0;
+    for (int index = 0;  index < 255; index++) {
+      if (nmeaLine[index] != '@') {
+        cleanedNemeaLine[cleanedNmeaIndex] = nmeaLine[index];
+        if (cleanedNemeaLine[cleanedNmeaIndex] != '@'  && cleanedNemeaLine[cleanedNmeaIndex] != '$' && cleanedNemeaLine[cleanedNmeaIndex] != '*') {
+          chk ^= cleanedNemeaLine[cleanedNmeaIndex];
         }
+        cleanedNmeaIndex++;
+      }
+      if (nmeaLine[index] == '*') {
+        break;
       }
     }
-    
-    cleanNemea += String(chk, HEX);
-    cleanNemea.toUpperCase();
-    return (cleanNemea);
-  } else {
-    return (inNmea183);
+    char hexChk [2] ;
+    sprintf(hexChk, "%0X", chk);
+    strncat(cleanedNemeaLine, hexChk, 2);
+    return true;
   }
+  else {
+    return false;
+  }
+
 }
+
 
