@@ -39,7 +39,13 @@ Hardware and firmware is able to:
 * recalculate the checksum
 * transmit the nmea string to the radio with a software serial port
 
+###The hardware:
 
+![Actual Breadboard](https://github.com/in3aqk/thd7gps/blob/master/images/thd7gps.jpg)
+
+
+
+###LINKS:
 Reference http://www.qsl.net/n6qab/n6qabgps1.htm
 
 (c) 2017 Paolo Mattiolo In3aqk
