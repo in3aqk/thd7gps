@@ -42,7 +42,7 @@ Hardware and firmware is able to:
 ###The hardware:
 This is the testing hardware, actually on a breadboard
 
-![Actual Breadboard](https://github.com/in3aqk/thd7gps/blob/master/images/thd7gps.jpg)
+![Actual Breadboard](./images/thd7gps.jpg)
 
 
 
