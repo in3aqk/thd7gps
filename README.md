@@ -40,13 +40,14 @@ Hardware and firmware is able to:
 * transmit the nmea string to the radio with a software serial port
 
 ###The hardware:
+This is the testing hardware, actually on a breadboard
 
 ![Actual Breadboard](https://github.com/in3aqk/thd7gps/blob/master/images/thd7gps.jpg)
 
 
 
 ###LINKS:
-Reference http://www.qsl.net/n6qab/n6qabgps1.htm
+Reference for gps compatibility http://www.qsl.net/n6qab/n6qabgps1.htm
 
 (c) 2017 Paolo Mattiolo In3aqk
 
